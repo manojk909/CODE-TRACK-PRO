@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group.name }} - Group Chat{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <a href="{{ url_for('study_groups') }}" class="btn btn-outline-secondary btn-sm me-3">
+                                <i class="fas fa-arrow-left me-1"></i>Back
+                            </a>
+                            <div>
+                                <h2 class="fw-bold gradient-text mb-1">{{ group.name }}</h2>
+                                <p class="text-muted mb-0">{{ group.topic }} • {{ group.skill_level }} Level</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <div class="d-flex gap-2 justify-content-md-end">
+                            <span class="badge bg-success">{{ group.members|length }}/{{ group.max_members }} Members</span>
+                            {% if member.role == 'moderator' %}
+                            <span class="badge bg-warning">Moderator</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-pills justify-content-center" id="groupChatTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="chat-tab" data-bs-toggle="pill" data-bs-target="#chat">
+                        <i class="fas fa-comments me-2"></i>Group Chat
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="doubts-tab" data-bs-toggle="pill" data-bs-target="#doubts">
+                        <i class="fas fa-question-circle me-2"></i>Group Doubts ({{ group_doubts|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="members-tab" data-bs-toggle="pill" data-bs-target="#members">
+                        <i class="fas fa-users me-2"></i>Members ({{ group.members|length }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="groupChatTabsContent">
+        <!-- Chat Tab -->
+        <div class="tab-pane fade show active" id="chat" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="glass-card p-0" style="height: 600px; display: flex; flex-direction: column;">
+                        <!-- Chat Messages -->
+                        <div class="chat-messages p-4" style="flex: 1; overflow-y: auto; max-height: 500px;" id="chatMessages">
+                            {% if messages %}
+                                {% for message in messages %}
+                                <div class="chat-message mb-3">
+                                    <div class="d-flex align-items-start">
+                                        <div class="chat-avatar me-3">
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <span class="text-white fw-bold">{{ message.user.username[0].upper() }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-1">
+                                                <span class="fw-bold me-2">{{ message.user.username }}</span>
+                                                <small class="text-muted">{{ message.created_at.strftime('%I:%M %p') }}</small>
+                                            </div>
+                                            <div class="chat-message-content">
+                                                {{ message.message }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No messages yet</h5>
+                                <p class="text-muted">Start the conversation!</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Message Input -->
+                        <div class="chat-input p-3 border-top">
+                            <form id="messageForm" onsubmit="sendMessage(event)">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="messageInput" placeholder="Type your message..." required>
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group Doubts Tab -->
+        <div class="tab-pane fade" id="doubts" role="tabpanel">
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <h5 class="fw-bold mb-3">Anonymous Group Doubts</h5>
+                    <p class="text-muted">Ask questions anonymously within your group. If not answered within 24 hours, AI will provide a response.</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#askGroupDoubtModal">
+                        <i class="fas fa-plus me-2"></i>Ask Anonymous Doubt
+                    </button>
+                </div>
+            </div>
+
+            {% if group_doubts %}
+            <div class="row g-4">
+                {% for doubt in group_doubts %}
+                <div class="col-12">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-2">{{ doubt.title }}</h6>
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <span class="badge bg-primary">{{ doubt.category or 'General' }}</span>
+                                    {% if doubt.is_solved %}
+                                    <span class="badge bg-success">Solved</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Open</span>
+                                    {% endif %}
+                                    {% set ai_answered = false %}
+                                    {% for answer in doubt.answers %}
+                                        {% if answer.is_ai_generated and not ai_answered %}
+                                        <span class="badge bg-info">AI Answered</span>
+                                        {% set ai_answered = true %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <p class="text-muted mb-2">{{ doubt.content[:200] }}{% if doubt.content|length > 200 %}...{% endif %}</p>
+                            </div>
+                            <small class="text-muted">{{ doubt.created_at.strftime('%b %d, %I:%M %p') }}</small>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-3">
+                                <button class="btn btn-sm btn-outline-success" onclick="votePost({{ doubt.id }}, 'upvote')">
+                                    <i class="fas fa-thumbs-up me-1"></i>{{ doubt.votes or 0 }}
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewAnswers({{ doubt.id }})">
+                                    <i class="fas fa-comments me-1"></i>{{ doubt.answers|length }} answers
+                                </button>
+                                <small class="text-muted"><i class="fas fa-eye me-1"></i>{{ doubt.views }} views</small>
+                            </div>
+                            <a href="{{ url_for('enhanced_doubt_detail', post_id=doubt.id) }}" class="btn btn-outline-primary btn-sm">
+                                View Discussion
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="glass-card p-5 text-center">
+                <i class="fas fa-question-circle fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted mb-3">No doubts posted yet</h4>
+                <p class="text-muted mb-4">Be the first to ask an anonymous question in this group</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#askGroupDoubtModal">
+                    <i class="fas fa-plus me-2"></i>Ask First Doubt
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Members Tab -->
+        <div class="tab-pane fade" id="members" role="tabpanel">
+            <div class="row g-4">
+                {% for member_info in group.members %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="glass-card p-4 text-center">
+                        <div class="member-avatar mb-3">
+                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 60px; height: 60px;">
+                                <span class="text-white fw-bold h4 mb-0">{{ member_info.user.username[0].upper() }}</span>
+                            </div>
+                        </div>
+                        <h6 class="fw-bold mb-1">{{ member_info.user.username }}</h6>
+                        <div class="mb-2">
+                            {% if member_info.role == 'moderator' %}
+                            <span class="badge bg-warning">Moderator</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Member</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">Joined {{ member_info.joined_at.strftime('%b %Y') if member_info.joined_at else 'Recently' }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ask Group Doubt Modal -->
+<div class="modal fade" id="askGroupDoubtModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">Ask Anonymous Group Doubt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_group_doubt', group_id=group.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Your question will be posted anonymously to group members. If not answered within 24 hours, AI will provide a response.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="doubtTitle" class="form-label">Question Title</label>
+                            <input type="text" class="form-control" name="title" id="doubtTitle" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="doubtContent" class="form-label">Question Details</label>
+                            <textarea class="form-control" name="content" id="doubtContent" rows="6" required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="doubtCategory" class="form-label">Category</label>
+                            <select class="form-select" name="category" id="doubtCategory" required>
+                                <option value="">Select a category</option>
+                                <option value="Data Structures">Data Structures</option>
+                                <option value="Algorithms">Algorithms</option>
+                                <option value="System Design">System Design</option>
+                                <option value="Database">Database</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                                <option value="Machine Learning">Machine Learning</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="doubtTags" class="form-label">Tags (comma separated)</label>
+                            <input type="text" class="form-control" name="tags" id="doubtTags" placeholder="e.g. recursion, optimization">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Post Anonymous Doubt
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendMessage(event) {
+    event.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    fetch(`{{ url_for('send_group_message', group_id=group.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `message=${encodeURIComponent(message)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageInput.value = '';
+            addMessageToChat(data.message);
+        } else {
+            alert('Error sending message: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send message');
+    });
+}
+
+function addMessageToChat(messageData) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageHtml = `
+        <div class="chat-message mb-3">
+            <div class="d-flex align-items-start">
+                <div class="chat-avatar me-3">
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <span class="text-white fw-bold">${messageData.username[0].toUpperCase()}</span>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="fw-bold me-2">${messageData.username}</span>
+                        <small class="text-muted">just now</small>
+                    </div>
+                    <div class="chat-message-content">
+                        ${messageData.message}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Voting functionality
+function votePost(postId, voteType) {
+    fetch(`/vote_post/${postId}/${voteType}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the vote count in the button
+            const voteBtn = document.querySelector(`button[onclick*="votePost(${postId}"]`);
+            const icon = voteBtn.querySelector('i');
+            voteBtn.innerHTML = `${icon.outerHTML}${data.new_vote_count}`;
+            
+            // Add visual feedback
+            voteBtn.style.backgroundColor = 'var(--bs-success)';
+            voteBtn.style.color = 'white';
+            setTimeout(() => {
+                voteBtn.style.backgroundColor = '';
+                voteBtn.style.color = '';
+            }, 1000);
+        } else {
+            alert('Error voting: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to vote');
+    });
+}
+
+// View answers functionality
+function viewAnswers(postId) {
+    // Redirect to the detailed discussion page
+    window.location.href = `/enhanced_doubt_detail/${postId}`;
+}
+
+// Auto-scroll to bottom on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

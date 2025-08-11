@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Coding Platforms - CodeLearn Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="fw-bold gradient-text mb-2">
+                            <i class="fas fa-laptop-code me-2"></i>Coding Platforms
+                        </h2>
+                        <p class="text-muted mb-0">Track your progress across multiple coding platforms</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#syncPlatformModal">
+                            <i class="fas fa-sync-alt me-2"></i>Sync Platform
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Cards -->
+    <div class="row g-4 mb-4">
+        {% for stat in platform_stats %}
+        <div class="col-lg-6">
+            <div class="glass-card p-4 platform-detail-card">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="platform-icon me-3 
+                        {% if stat.platform == 'leetcode' %}leetcode-bg{% endif %}
+                        {% if stat.platform == 'geeksforgeeks' %}geeksforgeeks-bg{% endif %}
+                        {% if stat.platform == 'hackerrank' %}hackerrank-bg{% endif %}
+                        {% if stat.platform == 'github' %}github-bg{% endif %}
+                    ">
+                        {% if stat.platform == 'leetcode' %}
+                            <i class="fas fa-code"></i>
+                        {% elif stat.platform == 'geeksforgeeks' %}
+                            <i class="fas fa-book"></i>
+                        {% elif stat.platform == 'hackerrank' %}
+                            <i class="fas fa-trophy"></i>
+                        {% elif stat.platform == 'github' %}
+                            <i class="fab fa-github"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ stat.platform.title() }}</h5>
+                        <small class="text-muted">Last updated: {{ stat.last_updated.strftime('%b %d, %Y') }}</small>
+                    </div>
+                    <div class="text-end">
+                        {% if stat.platform == 'github' %}
+                        <div class="badge bg-primary">{{ stat.total_problems }} repositories</div>
+                        {% else %}
+                        <div class="badge bg-primary">{{ stat.total_problems }} solved</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    {% if stat.platform == 'github' %}
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="difficulty-circle easy">{{ stat.easy_solved }}</div>
+                            <small class="text-muted">Repos</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="difficulty-circle medium">{{ stat.medium_solved }}</div>
+                            <small class="text-muted">Stars</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="difficulty-circle hard">{{ stat.hard_solved }}</div>
+                            <small class="text-muted">Followers</small>
+                        </div>
+                    </div>
+                    {% elif stat.platform == 'geeksforgeeks' %}
+                    <div class="col-3">
+                        <div class="text-center">
+                            <div class="difficulty-circle school">{{ stat.basic_solved }}</div>
+                            <small class="text-muted">Basic</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <div class="difficulty-circle easy">{{ stat.easy_solved }}</div>
+                            <small class="text-muted">Easy</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <div class="difficulty-circle medium">{{ stat.medium_solved }}</div>
+                            <small class="text-muted">Medium</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-center">
+                            <div class="difficulty-circle hard">{{ stat.hard_solved }}</div>
+                            <small class="text-muted">Hard</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="difficulty-circle easy">{{ stat.easy_solved }}</div>
+                            <small class="text-muted">Easy</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="difficulty-circle medium">{{ stat.medium_solved }}</div>
+                            <small class="text-muted">Medium</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="difficulty-circle hard">{{ stat.hard_solved }}</div>
+                            <small class="text-muted">Hard</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if stat.platform == 'github' %}
+                        <small class="text-muted">Languages: <strong>{{ stat.contest_rating }}</strong></small>
+                        {% elif stat.contest_rating > 0 %}
+                        <small class="text-muted">Rating: <strong>{{ stat.contest_rating }}</strong></small>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if stat.platform == 'github' %}
+                        <small class="text-muted">
+                            <i class="fas fa-code-branch text-info me-1"></i>{{ stat.streak }} forks
+                        </small>
+                        {% else %}
+                        <small class="text-muted">
+                            <i class="fas fa-fire text-danger me-1"></i>{{ stat.streak }} day streak
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if platform_stats|length == 0 %}
+        <div class="col-12">
+            <div class="glass-card p-5 text-center">
+                <i class="fas fa-laptop-code fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted mb-3">No platforms connected yet</h4>
+                <p class="text-muted mb-4">Connect your coding platforms to track progress</p>
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#syncPlatformModal">
+                    <i class="fas fa-plus me-2"></i>Add Your First Platform
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Problems Section -->
+    <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0">
+                <i class="fas fa-list me-2"></i>Available Problems
+            </h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary btn-sm filter-btn active" data-filter="all">All</button>
+                <button type="button" class="btn btn-outline-success btn-sm filter-btn" data-filter="easy">Easy</button>
+                <button type="button" class="btn btn-outline-warning btn-sm filter-btn" data-filter="medium">Medium</button>
+                <button type="button" class="btn btn-outline-danger btn-sm filter-btn" data-filter="hard">Hard</button>
+            </div>
+        </div>
+
+        {% if problems %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Problem</th>
+                        <th>Platform</th>
+                        <th>Difficulty</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problem in problems %}
+                    <tr class="problem-row" data-difficulty="{{ problem.difficulty.lower() }}">
+                        <td>
+                            <strong>{{ problem.title }}</strong>
+                            {% if problem.description %}
+                            <br><small class="text-muted">{{ problem.description[:100] }}...</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if problem.platform == 'leetcode' %}leetcode-badge{% endif %}
+                                {% if problem.platform == 'geeksforgeeks' %}geeksforgeeks-badge{% endif %}
+                                {% if problem.platform == 'hackerrank' %}hackerrank-badge{% endif %}
+                                {% if problem.platform == 'github' %}github-badge{% endif %}
+                            ">
+                                {{ problem.platform.title() }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if problem.difficulty == 'Easy' %}bg-success{% endif %}
+                                {% if problem.difficulty == 'Medium' %}bg-warning{% endif %}
+                                {% if problem.difficulty == 'Hard' %}bg-danger{% endif %}
+                            ">
+                                {{ problem.difficulty }}
+                            </span>
+                        </td>
+                        <td>{{ problem.category }}</td>
+                        <td>
+                            {% set solved = user_solutions|selectattr('problem_id', 'equalto', problem.id)|first %}
+                            {% if solved %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Solved
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Attempted</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if problem.url %}
+                            <a href="{{ problem.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>Solve
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-list fa-2x text-muted mb-2"></i>
+            <p class="text-muted">No problems available yet. Sync your platforms to see problems.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Sync Platform Modal -->
+<div class="modal fade" id="syncPlatformModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">Sync Platform Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <!-- LeetCode -->
+                    <div class="col-md-6">
+                        <div class="platform-sync-card leetcode-border">
+                            <div class="card-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="platform-icon leetcode-bg me-3">
+                                        <i class="fas fa-code"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">LeetCode</h6>
+                                        <small class="text-muted">Sync your problem-solving progress</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('sync_platform') }}">
+                                    <input type="hidden" name="platform" value="leetcode">
+                                    <div class="mb-3">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" class="form-control" name="username" 
+                                               value="{{ user.leetcode_username or '' }}" 
+                                               placeholder="Enter LeetCode username" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="fas fa-sync-alt me-2"></i>Sync LeetCode
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GeeksforGeeks -->
+                    <div class="col-md-6">
+                        <div class="platform-sync-card geeksforgeeks-border">
+                            <div class="card-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="platform-icon geeksforgeeks-bg me-3">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">GeeksforGeeks</h6>
+                                        <small class="text-muted">Track practice progress</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('sync_platform') }}">
+                                    <input type="hidden" name="platform" value="geeksforgeeks">
+                                    <div class="mb-3">
+                                        <label class="form-label">Profile URL</label>
+                                        <input type="text" class="form-control" name="username" 
+                                               value="{{ user.geeksforgeeks_profile or '' }}" 
+                                               placeholder="Enter profile URL" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-sync-alt me-2"></i>Sync GeeksforGeeks
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HackerRank -->
+                    <div class="col-md-6">
+                        <div class="platform-sync-card hackerrank-border">
+                            <div class="card-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="platform-icon hackerrank-bg me-3">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">HackerRank</h6>
+                                        <small class="text-muted">Sync challenge completions</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('sync_platform') }}">
+                                    <input type="hidden" name="platform" value="hackerrank">
+                                    <div class="mb-3">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" class="form-control" name="username" 
+                                               value="{{ user.hackerrank_username or '' }}" 
+                                               placeholder="Enter HackerRank username" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-info w-100">
+                                        <i class="fas fa-sync-alt me-2"></i>Sync HackerRank
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GitHub -->
+                    <div class="col-md-6">
+                        <div class="platform-sync-card github-border">
+                            <div class="card-header">
+                                <div class="d-flex align-items-center">
+                                    <div class="platform-icon github-bg me-3">
+                                        <i class="fab fa-github"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">GitHub</h6>
+                                        <small class="text-muted">Track contribution activity</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('sync_platform') }}">
+                                    <input type="hidden" name="platform" value="github">
+                                    <div class="mb-3">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" class="form-control" name="username" 
+                                               value="{{ user.github_username or '' }}" 
+                                               placeholder="Enter GitHub username" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-dark w-100">
+                                        <i class="fas fa-sync-alt me-2"></i>Sync GitHub
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter problems by difficulty
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const filter = this.dataset.filter;
+        
+        // Update active button
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filter rows
+        document.querySelectorAll('.problem-row').forEach(row => {
+            if (filter === 'all' || row.dataset.difficulty === filter) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

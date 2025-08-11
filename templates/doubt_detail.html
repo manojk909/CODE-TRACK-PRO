@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - Doubts Forum{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Back Navigation -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{{ url_for('doubts') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Forum
+            </a>
+        </div>
+    </div>
+
+    <!-- Question -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row">
+            <div class="col-md-1 text-center">
+                <div class="question-voting">
+                    <button class="btn btn-link vote-btn p-1" onclick="votePost({{ post.id }}, 'up')">
+                        <i class="fas fa-chevron-up text-muted"></i>
+                    </button>
+                    <div class="vote-count fw-bold text-primary my-2">{{ post.votes }}</div>
+                    <button class="btn btn-link vote-btn p-1" onclick="votePost({{ post.id }}, 'down')">
+                        <i class="fas fa-chevron-down text-muted"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-11">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="flex-grow-1">
+                        <h2 class="fw-bold mb-2">
+                            {{ post.title }}
+                            {% if post.is_solved %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check me-1"></i>Solved
+                            </span>
+                            {% endif %}
+                        </h2>
+                        <div class="question-meta mb-3">
+                            <span class="badge bg-primary me-2">{{ post.category }}</span>
+                            {% if post.tags %}
+                                {% for tag in post.tags.split(',') %}
+                                <span class="badge bg-outline-secondary me-1">{{ tag.strip() }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-eye me-1"></i>{{ post.views }} views
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="question-content mb-4">
+                    <pre class="question-text">{{ post.content }}</pre>
+                </div>
+                
+                <div class="question-footer d-flex justify-content-between align-items-center">
+                    <div class="question-actions">
+                        <button class="btn btn-outline-primary btn-sm me-2">
+                            <i class="fas fa-share me-1"></i>Share
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-bookmark me-1"></i>Save
+                        </button>
+                    </div>
+                    <div class="author-info">
+                        <small class="text-muted">
+                            Asked by <strong>{{ post.author.username }}</strong>
+                            on {{ post.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answers -->
+    <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold mb-0">
+                <i class="fas fa-comments me-2"></i>
+                {{ answers|length }} Answer{{ 's' if answers|length != 1 else '' }}
+            </h4>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-sort me-1"></i>Sort by
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="sortAnswers('votes')">Most Votes</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="sortAnswers('newest')">Newest</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="sortAnswers('oldest')">Oldest</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Answer List -->
+        <div id="answersContainer">
+            {% for answer in answers %}
+            <div class="answer-item mb-4 pb-4 {% if not loop.last %}border-bottom{% endif %}" 
+                 data-votes="{{ answer.votes }}" 
+                 data-date="{{ answer.created_at.timestamp() }}">
+                <div class="row">
+                    <div class="col-md-1 text-center">
+                        <div class="answer-voting">
+                            <button class="btn btn-link vote-btn p-1" onclick="voteAnswer({{ answer.id }}, 'up')">
+                                <i class="fas fa-chevron-up text-muted"></i>
+                            </button>
+                            <div class="vote-count fw-bold text-success my-2">{{ answer.votes }}</div>
+                            <button class="btn btn-link vote-btn p-1" onclick="voteAnswer({{ answer.id }}, 'down')">
+                                <i class="fas fa-chevron-down text-muted"></i>
+                            </button>
+                            {% if answer.is_accepted %}
+                            <div class="accepted-badge mt-2">
+                                <i class="fas fa-check-circle text-success fa-2x" title="Accepted Answer"></i>
+                            </div>
+                            {% elif post.author_id == session.user_id %}
+                            <button class="btn btn-link accept-btn mt-2 p-1" onclick="acceptAnswer({{ answer.id }})" 
+                                    title="Mark as accepted answer">
+                                <i class="fas fa-check-circle text-muted"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-11">
+                        {% if answer.is_accepted %}
+                        <div class="alert alert-success alert-sm mb-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Accepted Answer</strong> - This answer was marked as correct by the question author
+                        </div>
+                        {% endif %}
+                        
+                        <div class="answer-content mb-3">
+                            <pre class="answer-text">{{ answer.content }}</pre>
+                        </div>
+                        
+                        <div class="answer-footer d-flex justify-content-between align-items-center">
+                            <div class="answer-actions">
+                                <button class="btn btn-outline-primary btn-sm me-2">
+                                    <i class="fas fa-reply me-1"></i>Reply
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-share me-1"></i>Share
+                                </button>
+                            </div>
+                            <div class="author-info">
+                                <small class="text-muted">
+                                    Answered by <strong>{{ answer.author.username }}</strong>
+                                    on {{ answer.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                                    {% if answer.updated_at != answer.created_at %}
+                                    • Edited {{ answer.updated_at.strftime('%b %d, %Y') }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if answers|length == 0 %}
+        <div class="text-center py-4">
+            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted mb-3">No answers yet</h5>
+            <p class="text-muted">Be the first to help solve this question!</p>
+        </div>
+        {% endif %}
+
+        <!-- Add Answer Form -->
+        <div class="mt-5 pt-4 border-top">
+            <h5 class="fw-bold mb-3">Your Answer</h5>
+            <form method="POST" action="{{ url_for('answer_doubt', post_id=post.id) }}">
+                <div class="mb-3">
+                    <textarea class="form-control" name="content" rows="8" 
+                              placeholder="Write your answer here... Be detailed and provide examples if possible." required></textarea>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Use proper formatting and be respectful to get better engagement
+                    </small>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Post Answer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function votePost(postId, voteType) {
+    fetch(`{{ url_for('vote_post', post_id=0, vote_type='upvote') }}`.replace('0', postId).replace('upvote', voteType), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelector('.question-voting .vote-count').textContent = data.new_vote_count;
+            // Add visual feedback
+            const btn = event.target.closest('button');
+            btn.style.backgroundColor = 'var(--bs-success)';
+            btn.style.color = 'white';
+            setTimeout(() => {
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+            }, 1000);
+        } else {
+            alert('Error voting: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to vote');
+    });
+}
+
+function voteAnswer(answerId, voteType) {
+    fetch(`{{ url_for('vote_answer', answer_id=0, vote_type='upvote') }}`.replace('0', answerId).replace('upvote', voteType), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const answerDiv = event.target.closest('.answer-item');
+            answerDiv.querySelector('.answer-voting .vote-count').textContent = data.new_vote_count;
+            // Add visual feedback
+            const btn = event.target.closest('button');
+            btn.style.backgroundColor = 'var(--bs-success)';
+            btn.style.color = 'white';
+            setTimeout(() => {
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+            }, 1000);
+        } else {
+            alert('Error voting: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to vote');
+    });
+}
+
+function acceptAnswer(answerId) {
+    // Implement accept answer functionality
+    console.log(`Accepting answer ${answerId}`);
+    // In a real implementation, this would make an AJAX call
+}
+
+function sortAnswers(sortBy) {
+    const container = document.getElementById('answersContainer');
+    const answers = Array.from(container.children);
+    
+    answers.sort((a, b) => {
+        if (sortBy === 'votes') {
+            return parseInt(b.dataset.votes) - parseInt(a.dataset.votes);
+        } else if (sortBy === 'newest') {
+            return parseFloat(b.dataset.date) - parseFloat(a.dataset.date);
+        } else if (sortBy === 'oldest') {
+            return parseFloat(a.dataset.date) - parseFloat(b.dataset.date);
+        }
+    });
+    
+    answers.forEach(answer => container.appendChild(answer));
+}
+
+// Auto-resize textarea
+document.querySelector('textarea[name="content"]').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+});
+</script>
+{% endblock %}

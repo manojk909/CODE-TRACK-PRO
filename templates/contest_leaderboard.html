@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Live Leaderboard - {{ contest.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('contest_participate', contest_id=contest.id) }}" 
+               class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h2 class="gradient-text fw-bold mb-0">
+                    <i class="fas fa-chart-line me-2"></i>{{ contest.title }} - Live Leaderboard
+                </h2>
+                <small class="text-muted">
+                    <span class="badge bg-warning text-dark">LIVE</span>
+                    | Updates every 30 seconds
+                </small>
+            </div>
+        </div>
+        
+        <!-- Contest Timer -->
+        <div class="text-end">
+            <div class="contest-timer h4 mb-1" id="timer">
+                <span class="badge bg-danger text-white fs-5">
+                    <i class="fas fa-clock me-2"></i>
+                    <span id="timeRemaining">Loading...</span>
+                </span>
+            </div>
+            <small class="text-muted">Time remaining</small>
+        </div>
+    </div>
+
+    <!-- Top 3 Quick View -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-medal me-2"></i>Current Top 3
+                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="refreshLeaderboard()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </h5>
+                
+                {% if top_participants|length >= 3 %}
+                <div class="row">
+                    {% for participant, user in top_participants[:3] %}
+                    <div class="col-md-4 mb-3">
+                        <div class="mini-podium p-3 rounded text-center
+                            {% if loop.index == 1 %}border-warning{% elif loop.index == 2 %}border-info{% else %}border-secondary{% endif %}">
+                            <div class="mb-2">
+                                {% if loop.index == 1 %}
+                                    <i class="fas fa-crown fa-2x text-warning"></i>
+                                    <div class="badge bg-warning text-dark mt-1">#1</div>
+                                {% elif loop.index == 2 %}
+                                    <i class="fas fa-medal fa-2x text-info"></i>
+                                    <div class="badge bg-info mt-1">#2</div>
+                                {% else %}
+                                    <i class="fas fa-medal fa-2x text-secondary"></i>
+                                    <div class="badge bg-secondary mt-1">#3</div>
+                                {% endif %}
+                            </div>
+                            <h6 class="fw-bold">{{ user.username }}</h6>
+                            <div class="small">
+                                <div class="mb-1"><i class="fas fa-star me-1 text-warning"></i>{{ participant.total_score }} pts</div>
+                                <div><i class="fas fa-check-circle me-1 text-success"></i>{{ participant.problems_solved }} solved</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                    <h6 class="text-muted">Waiting for participants...</h6>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Leaderboard -->
+    <div class="row">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-list-ol me-2"></i>Full Leaderboard
+                        <span class="badge bg-primary ms-2" id="participantCount">{{ top_participants|length }}</span>
+                    </h5>
+                    <div class="d-flex align-items-center">
+                        <small class="text-muted me-3">
+                            <i class="fas fa-clock me-1"></i>Last updated: <span id="lastUpdate">Just now</span>
+                        </small>
+                        <div class="spinner-border spinner-border-sm text-primary" id="refreshSpinner" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                {% if top_participants %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped" id="leaderboardTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 80px;">Rank</th>
+                                <th>Participant</th>
+                                <th class="text-center" style="width: 100px;">Score</th>
+                                <th class="text-center" style="width: 100px;">Solved</th>
+                                <th class="text-center" style="width: 150px;">Last Submission</th>
+                                <th class="text-center" style="width: 100px;">Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            {% for participant, user in top_participants %}
+                            <tr data-user-id="{{ user.id }}" 
+                                {% if loop.index <= 3 %}class="table-warning"{% endif %}>
+                                <td class="text-center">
+                                    <div class="rank-display">
+                                        {% if loop.index == 1 %}
+                                            <i class="fas fa-crown text-warning me-1"></i>
+                                        {% elif loop.index == 2 %}
+                                            <i class="fas fa-medal text-info me-1"></i>
+                                        {% elif loop.index == 3 %}
+                                            <i class="fas fa-medal text-secondary me-1"></i>
+                                        {% endif %}
+                                        <strong>#{{ loop.index }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ user.username }}</div>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark score-badge">{{ participant.total_score }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success solved-badge">{{ participant.problems_solved }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <small class="text-muted last-submission">
+                                        {{ participant.last_submission.strftime('%H:%M:%S') if participant.last_submission else '-' }}
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="trend-indicator" data-trend="stable">
+                                        <i class="fas fa-minus text-muted"></i>
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users-slash fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No participants yet</h5>
+                    <p class="text-muted">The leaderboard will update as students start submitting solutions.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Contest Progress Stats -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>Contest Progress
+                </h5>
+                <div class="row text-center" id="contestStats">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h4 class="text-primary" id="totalParticipants">{{ top_participants|length }}</h4>
+                            <small class="text-muted">Active Participants</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h4 class="text-success">{{ contest.problems|length }}</h4>
+                            <small class="text-muted">Total Problems</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h4 class="text-info" id="totalSubmissions">-</h4>
+                            <small class="text-muted">Submissions</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            {% set max_score = top_participants[0][0].total_score if top_participants else 0 %}
+                            <h4 class="text-warning" id="maxScore">{{ max_score }}</h4>
+                            <small class="text-muted">Highest Score</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.contest-timer {
+    font-family: 'Courier New', monospace;
+}
+
+.mini-podium {
+    border: 2px solid;
+    background: rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.mini-podium:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card {
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.rank-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trend-indicator {
+    transition: all 0.3s ease;
+}
+
+.trend-up {
+    color: #28a745 !important;
+    animation: bounce 0.5s ease;
+}
+
+.trend-down {
+    color: #dc3545 !important;
+    animation: shake 0.5s ease;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-5px); }
+    60% { transform: translateY(-3px); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.table-warning {
+    --bs-table-bg: rgba(255, 193, 7, 0.1);
+}
+
+.score-badge, .solved-badge {
+    font-size: 0.9rem;
+    min-width: 40px;
+}
+</style>
+
+<script>
+let remainingSeconds = {{ remaining_seconds }};
+let previousRankings = new Map();
+
+function updateTimer() {
+    if (remainingSeconds <= 0) {
+        document.getElementById('timeRemaining').innerHTML = 'FINISHED';
+        // Redirect to results
+        setTimeout(() => {
+            window.location.href = "{{ url_for('contest_results', contest_id=contest.id) }}";
+        }, 3000);
+        return;
+    }
+
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    const seconds = remainingSeconds % 60;
+
+    let timeText = '';
+    if (hours > 0) {
+        timeText = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+        timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    document.getElementById('timeRemaining').textContent = timeText;
+    
+    // Change timer color based on remaining time
+    const timerBadge = document.querySelector('.contest-timer .badge');
+    if (remainingSeconds <= 300) { // 5 minutes
+        timerBadge.className = 'badge bg-danger text-white fs-5';
+    } else if (remainingSeconds <= 900) { // 15 minutes
+        timerBadge.className = 'badge bg-warning text-dark fs-5';
+    }
+
+    remainingSeconds--;
+}
+
+function refreshLeaderboard() {
+    const spinner = document.getElementById('refreshSpinner');
+    spinner.style.display = 'inline-block';
+    
+    fetch(`{{ url_for('contest_leaderboard', contest_id=contest.id) }}`)
+        .then(response => response.text())
+        .then(html => {
+            // Parse the response and update the leaderboard
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newBody = doc.getElementById('leaderboardBody');
+            
+            if (newBody) {
+                updateLeaderboardWithTrends(newBody.innerHTML);
+            }
+            
+            // Update stats
+            const statsElement = doc.getElementById('contestStats');
+            if (statsElement) {
+                document.getElementById('contestStats').innerHTML = statsElement.innerHTML;
+            }
+            
+            // Update last update time
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        })
+        .catch(error => {
+            console.error('Failed to refresh leaderboard:', error);
+        })
+        .finally(() => {
+            spinner.style.display = 'none';
+        });
+}
+
+function updateLeaderboardWithTrends(newBodyHTML) {
+    // Store current rankings before update
+    const currentRows = document.querySelectorAll('#leaderboardBody tr');
+    const newRankings = new Map();
+    
+    currentRows.forEach((row, index) => {
+        const userId = row.dataset.userId;
+        if (userId) {
+            previousRankings.set(userId, index + 1);
+        }
+    });
+    
+    // Update the table body
+    document.getElementById('leaderboardBody').innerHTML = newBodyHTML;
+    
+    // Add trend indicators
+    const updatedRows = document.querySelectorAll('#leaderboardBody tr');
+    updatedRows.forEach((row, index) => {
+        const userId = row.dataset.userId;
+        const currentRank = index + 1;
+        const previousRank = previousRankings.get(userId);
+        const trendIndicator = row.querySelector('.trend-indicator');
+        
+        if (previousRank && trendIndicator) {
+            if (previousRank > currentRank) {
+                // Moved up
+                trendIndicator.innerHTML = '<i class="fas fa-arrow-up text-success"></i>';
+                trendIndicator.className = 'trend-indicator trend-up';
+            } else if (previousRank < currentRank) {
+                // Moved down
+                trendIndicator.innerHTML = '<i class="fas fa-arrow-down text-danger"></i>';
+                trendIndicator.className = 'trend-indicator trend-down';
+            } else {
+                // No change
+                trendIndicator.innerHTML = '<i class="fas fa-minus text-muted"></i>';
+                trendIndicator.className = 'trend-indicator';
+            }
+        }
+        
+        newRankings.set(userId, currentRank);
+    });
+    
+    // Update previous rankings for next refresh
+    previousRankings = newRankings;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateTimer();
+    setInterval(updateTimer, 1000);
+    
+    // Auto-refresh leaderboard every 30 seconds
+    setInterval(refreshLeaderboard, 30000);
+    
+    // Store initial rankings
+    const initialRows = document.querySelectorAll('#leaderboardBody tr');
+    initialRows.forEach((row, index) => {
+        const userId = row.dataset.userId;
+        if (userId) {
+            previousRankings.set(userId, index + 1);
+        }
+    });
+});
+
+// Manual refresh button
+function refreshLeaderboard() {
+    const spinner = document.getElementById('refreshSpinner');
+    const button = event.target.closest('button');
+    
+    spinner.style.display = 'inline-block';
+    button.disabled = true;
+    
+    // Simulate refresh (in real app, this would fetch fresh data)
+    setTimeout(() => {
+        spinner.style.display = 'none';
+        button.disabled = false;
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        
+        // Add some random trend changes for demo
+        const trendIndicators = document.querySelectorAll('.trend-indicator');
+        trendIndicators.forEach((indicator, index) => {
+            if (Math.random() > 0.7) { // 30% chance of change
+                const change = Math.random() > 0.5 ? 'up' : 'down';
+                if (change === 'up') {
+                    indicator.innerHTML = '<i class="fas fa-arrow-up text-success"></i>';
+                    indicator.className = 'trend-indicator trend-up';
+                } else {
+                    indicator.innerHTML = '<i class="fas fa-arrow-down text-danger"></i>';
+                    indicator.className = 'trend-indicator trend-down';
+                }
+            }
+        });
+    }, 1000);
+}
+</script>
+{% endblock %}

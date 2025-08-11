@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - CodeLearn Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h2 class="fw-bold gradient-text mb-2">
+                    <i class="fas fa-user-cog me-2"></i>User Profile
+                </h2>
+                <p class="text-muted mb-0">Manage your account settings and learning preferences</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Profile Form -->
+        <div class="col-lg-8">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-4">
+                    <i class="fas fa-user me-2"></i>Personal Information
+                </h5>
+                
+                <form method="POST" action="{{ url_for('update_profile') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" id="firstName" 
+                                   value="{{ user.first_name or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" id="lastName" 
+                                   value="{{ user.last_name or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label for="bio" class="form-label">Bio</label>
+                            <textarea class="form-control" name="bio" id="bio" rows="3" 
+                                      placeholder="Tell us about yourself...">{{ user.bio or '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="learningGoals" class="form-label">Learning Goals</label>
+                            <textarea class="form-control" name="learning_goals" id="learningGoals" rows="3" 
+                                      placeholder="What do you want to achieve?">{{ user.learning_goals or '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="targetCompanies" class="form-label">Target Companies</label>
+                            <input type="text" class="form-control" name="target_companies" id="targetCompanies" 
+                                   value="{{ user.target_companies or '' }}" 
+                                   placeholder="Google, Amazon, Microsoft...">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="preferredSchedule" class="form-label">Preferred Study Schedule</label>
+                            <select class="form-select" name="preferred_schedule" id="preferredSchedule">
+                                <option value="">Select schedule</option>
+                                <option value="Morning" {{ 'selected' if user.preferred_schedule == 'Morning' else '' }}>Morning (6AM - 12PM)</option>
+                                <option value="Afternoon" {{ 'selected' if user.preferred_schedule == 'Afternoon' else '' }}>Afternoon (12PM - 6PM)</option>
+                                <option value="Evening" {{ 'selected' if user.preferred_schedule == 'Evening' else '' }}>Evening (6PM - 12AM)</option>
+                                <option value="Night" {{ 'selected' if user.preferred_schedule == 'Night' else '' }}>Night (12AM - 6AM)</option>
+                                <option value="Flexible" {{ 'selected' if user.preferred_schedule == 'Flexible' else '' }}>Flexible</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="fw-bold mb-4">
+                        <i class="fas fa-link me-2"></i>Platform Accounts
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="leetcodeUsername" class="form-label">
+                                <i class="fas fa-code text-warning me-2"></i>LeetCode Username
+                            </label>
+                            <input type="text" class="form-control" name="leetcode_username" id="leetcodeUsername" 
+                                   value="{{ user.leetcode_username or '' }}" 
+                                   placeholder="Your LeetCode username">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="geeksforgeeksProfile" class="form-label">
+                                <i class="fas fa-book text-success me-2"></i>GeeksforGeeks Profile
+                            </label>
+                            <input type="text" class="form-control" name="geeksforgeeks_profile" id="geeksforgeeksProfile" 
+                                   value="{{ user.geeksforgeeks_profile or '' }}" 
+                                   placeholder="Profile URL or username">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="hackerrankUsername" class="form-label">
+                                <i class="fas fa-trophy text-info me-2"></i>HackerRank Username
+                            </label>
+                            <input type="text" class="form-control" name="hackerrank_username" id="hackerrankUsername" 
+                                   value="{{ user.hackerrank_username or '' }}" 
+                                   placeholder="Your HackerRank username">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="githubUsername" class="form-label">
+                                <i class="fab fa-github text-dark me-2"></i>GitHub Username
+                            </label>
+                            <input type="text" class="form-control" name="github_username" id="githubUsername" 
+                                   value="{{ user.github_username or '' }}" 
+                                   placeholder="Your GitHub username">
+                        </div>
+                    </div>
+                    
+                    <div class="text-end mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Profile Summary -->
+        <div class="col-lg-4">
+            <!-- Account Summary -->
+            <div class="glass-card p-4 mb-4">
+                <div class="text-center mb-4">
+                    <div class="profile-avatar mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h4 class="fw-bold">{{ user.first_name or user.username }} {{ user.last_name or '' }}</h4>
+                    <p class="text-muted">@{{ user.username }}</p>
+                    <small class="text-muted">Member since {{ user.created_at.strftime('%B %Y') }}</small>
+                </div>
+                
+                <div class="profile-stats">
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-code me-2"></i>Problems Solved
+                            </span>
+                            <span class="fw-bold">{{ user.problems_solved|length }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-users me-2"></i>Study Groups
+                            </span>
+                            <span class="fw-bold">{{ user.study_group_memberships|length }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-brain me-2"></i>Flashcards
+                            </span>
+                            <span class="fw-bold">{{ user.flashcards|length }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">
+                                <i class="fas fa-question-circle me-2"></i>Forum Posts
+                            </span>
+                            <span class="fw-bold">{{ user.forum_posts|length }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Status -->
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-link me-2"></i>Platform Connections
+                </h5>
+                
+                <div class="platform-status">
+                    <div class="platform-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-code text-warning me-2"></i>
+                                <span>LeetCode</span>
+                            </div>
+                            {% if user.leetcode_username %}
+                            <span class="badge bg-success">Connected</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Connected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="platform-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-book text-success me-2"></i>
+                                <span>GeeksforGeeks</span>
+                            </div>
+                            {% if user.geeksforgeeks_profile %}
+                            <span class="badge bg-success">Connected</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Connected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="platform-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-trophy text-info me-2"></i>
+                                <span>HackerRank</span>
+                            </div>
+                            {% if user.hackerrank_username %}
+                            <span class="badge bg-success">Connected</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Connected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="platform-item mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fab fa-github text-dark me-2"></i>
+                                <span>GitHub</span>
+                            </div>
+                            {% if user.github_username %}
+                            <span class="badge bg-success">Connected</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Connected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('coding') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-sync-alt me-2"></i>Sync Platforms
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-history me-2"></i>Recent Activity
+                </h5>
+                
+                {% if user.study_sessions %}
+                <div class="activity-feed">
+                    {% for session in user.study_sessions[:3] %}
+                    <div class="activity-item mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="activity-icon me-3">
+                                <i class="fas fa-clock text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <p class="mb-1">{{ session.session_type.title() }} session</p>
+                                <small class="text-muted">
+                                    {{ session.duration or 0 }} minutes • 
+                                    {{ session.started_at.strftime('%b %d') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

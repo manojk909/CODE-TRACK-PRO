@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Results - {{ contest.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('contests') }}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="gradient-text fw-bold mb-0">
+                <i class="fas fa-trophy me-2"></i>{{ contest.title }} - Final Results
+            </h2>
+            <small class="text-muted">
+                <i class="fas fa-calendar me-1"></i>{{ contest.start_date.strftime('%Y-%m-%d %H:%M') }}
+                | <i class="fas fa-clock me-1"></i>{{ contest.duration_minutes }} minutes
+                | <i class="fas fa-users me-1"></i>{{ participants|length }} participants
+            </small>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Podium/Top 3 -->
+        <div class="col-12 mb-5">
+            <div class="glass-card p-4">
+                <h4 class="fw-bold text-center mb-4">
+                    <i class="fas fa-medal me-2"></i>Top Performers
+                </h4>
+                
+                {% if participants|length >= 3 %}
+                <div class="row justify-content-center">
+                    <!-- 2nd Place -->
+                    <div class="col-md-3 text-center mb-3 order-2 order-md-1">
+                        <div class="podium-place podium-silver p-3 rounded">
+                            <div class="podium-icon mb-3">
+                                <i class="fas fa-medal fa-3x text-info"></i>
+                            </div>
+                            <h5 class="fw-bold">{{ participants[1][1].username }}</h5>
+                            <div class="badge bg-info mb-2">2nd Place</div>
+                            <div class="text-muted">
+                                <div><i class="fas fa-star me-1"></i>{{ participants[1][0].total_score }} points</div>
+                                <div><i class="fas fa-check-circle me-1"></i>{{ participants[1][0].problems_solved }} solved</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 1st Place -->
+                    <div class="col-md-3 text-center mb-3 order-1 order-md-2">
+                        <div class="podium-place podium-gold p-3 rounded">
+                            <div class="podium-icon mb-3">
+                                <i class="fas fa-crown fa-3x text-warning"></i>
+                            </div>
+                            <h4 class="fw-bold">{{ participants[0][1].username }}</h4>
+                            <div class="badge bg-warning text-dark mb-2">WINNER</div>
+                            <div class="text-muted">
+                                <div><i class="fas fa-star me-1"></i>{{ participants[0][0].total_score }} points</div>
+                                <div><i class="fas fa-check-circle me-1"></i>{{ participants[0][0].problems_solved }} solved</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 3rd Place -->
+                    <div class="col-md-3 text-center mb-3 order-3">
+                        <div class="podium-place podium-bronze p-3 rounded">
+                            <div class="podium-icon mb-3">
+                                <i class="fas fa-medal fa-3x" style="color: #cd7f32;"></i>
+                            </div>
+                            <h5 class="fw-bold">{{ participants[2][1].username }}</h5>
+                            <div class="badge bg-secondary mb-2">3rd Place</div>
+                            <div class="text-muted">
+                                <div><i class="fas fa-star me-1"></i>{{ participants[2][0].total_score }} points</div>
+                                <div><i class="fas fa-check-circle me-1"></i>{{ participants[2][0].problems_solved }} solved</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif participants|length > 0 %}
+                <div class="text-center">
+                    <div class="podium-place podium-gold p-4 rounded d-inline-block">
+                        <i class="fas fa-crown fa-4x text-warning mb-3"></i>
+                        <h4 class="fw-bold">{{ participants[0][1].username }}</h4>
+                        <div class="badge bg-warning text-dark mb-2">WINNER</div>
+                        <div class="text-muted">
+                            <div><i class="fas fa-star me-1"></i>{{ participants[0][0].total_score }} points</div>
+                            <div><i class="fas fa-check-circle me-1"></i>{{ participants[0][0].problems_solved }} solved</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Your Performance (if student participated) -->
+        {% if current_user_rank %}
+        <div class="col-md-4 mb-4">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold text-center mb-3">
+                    <i class="fas fa-user me-2"></i>Your Performance
+                </h5>
+                <div class="text-center">
+                    <div class="rank-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; border: 3px solid var(--bs-primary); border-radius: 50%; font-size: 1.5rem; font-weight: bold;">
+                        #{{ current_user_rank }}
+                    </div>
+                    {% set user_participant = participants[current_user_rank-1][0] %}
+                    <h6 class="text-muted">Rank {{ current_user_rank }} of {{ participants|length }}</h6>
+                    <div class="mt-3">
+                        <div class="mb-2"><i class="fas fa-star me-2 text-warning"></i>{{ user_participant.total_score }} points</div>
+                        <div class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i>{{ user_participant.problems_solved }} problems solved</div>
+                        <div><i class="fas fa-clock me-2 text-info"></i>Last submission: {{ user_participant.last_submission.strftime('%H:%M:%S') if user_participant.last_submission else 'None' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Full Rankings -->
+        <div class="{% if current_user_rank %}col-md-8{% else %}col-12{% endif %}">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-4">
+                    <i class="fas fa-list-ol me-2"></i>Full Leaderboard
+                    <span class="badge bg-primary ms-2">{{ participants|length }} participants</span>
+                </h5>
+                
+                {% if participants %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Participant</th>
+                                <th class="text-center">Score</th>
+                                <th class="text-center">Solved</th>
+                                <th class="text-center">Last Submission</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for participant, user in participants %}
+                            <tr {% if loop.index <= 3 %}class="table-warning"{% endif %}
+                                {% if current_user_rank and loop.index == current_user_rank %}style="background-color: rgba(13, 202, 240, 0.2) !important;"{% endif %}>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if loop.index == 1 %}
+                                            <i class="fas fa-crown text-warning me-2"></i>
+                                        {% elif loop.index == 2 %}
+                                            <i class="fas fa-medal text-info me-2"></i>
+                                        {% elif loop.index == 3 %}
+                                            <i class="fas fa-medal me-2" style="color: #cd7f32;"></i>
+                                        {% else %}
+                                            <span class="me-3">&nbsp;</span>
+                                        {% endif %}
+                                        <strong>#{{ loop.index }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ user.username }}</div>
+                                    {% if current_user_rank and loop.index == current_user_rank %}
+                                        <small class="badge bg-info">You</small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark">{{ participant.total_score }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success">{{ participant.problems_solved }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <small class="text-muted">
+                                        {{ participant.last_submission.strftime('%H:%M:%S') if participant.last_submission else '-' }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">No participants in this contest</h6>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Contest Statistics -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-4">
+                    <i class="fas fa-chart-bar me-2"></i>Contest Statistics
+                </h5>
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <h4 class="text-primary">{{ participants|length }}</h4>
+                            <small class="text-muted">Total Participants</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <h4 class="text-success">{{ contest.problems|length }}</h4>
+                            <small class="text-muted">Total Problems</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            {% set total_submissions = contest.submissions|length %}
+                            <h4 class="text-info">{{ total_submissions }}</h4>
+                            <small class="text-muted">Total Submissions</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            {% set max_score = participants[0][0].total_score if participants else 0 %}
+                            <h4 class="text-warning">{{ max_score }}</h4>
+                            <small class="text-muted">Highest Score</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            {% set avg_score = (participants|map(attribute='0.total_score')|sum / participants|length)|round if participants else 0 %}
+                            <h4 class="text-secondary">{{ avg_score }}</h4>
+                            <small class="text-muted">Average Score</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-item">
+                            <h4 class="text-danger">{{ contest.duration_minutes }}</h4>
+                            <small class="text-muted">Duration (min)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="text-center mt-4 mb-5">
+        <a href="{{ url_for('contests') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-list me-2"></i>Back to Contests
+        </a>
+        {% if user.is_admin() and contest.created_by == session.user_id %}
+        <a href="{{ url_for('contest_edit', contest_id=contest.id) }}" class="btn btn-outline-secondary btn-lg ms-2">
+            <i class="fas fa-edit me-2"></i>Edit Contest
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.podium-place {
+    transition: transform 0.3s ease;
+    border: 2px solid transparent;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.podium-place:hover {
+    transform: translateY(-10px);
+}
+
+.podium-gold {
+    border-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
+}
+
+.podium-silver {
+    border-color: #6c757d;
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.1) 0%, rgba(108, 117, 125, 0.05) 100%);
+}
+
+.podium-bronze {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1) 0%, rgba(205, 127, 50, 0.05) 100%);
+}
+
+.podium-icon {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.stat-item {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 1rem;
+}
+
+.table-warning {
+    --bs-table-bg: rgba(255, 193, 7, 0.1);
+}
+
+.rank-circle {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+    .podium-place {
+        min-height: 150px;
+    }
+    
+    .podium-icon i {
+        font-size: 2rem !important;
+    }
+}
+</style>
+{% endblock %}

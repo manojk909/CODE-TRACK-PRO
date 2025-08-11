@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}Revision - CodeLearn Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h2 class="fw-bold gradient-text mb-2">
+                            <i class="fas fa-brain me-2"></i>AI-Powered Revision System
+                        </h2>
+                        <p class="text-muted mb-0">Generate flashcards from topics using AI with intelligent scheduling</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#aiGenerateModal">
+                            <i class="fas fa-magic me-2"></i>AI Generate Cards
+                        </button>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFlashcardModal">
+                            <i class="fas fa-plus me-2"></i>Create Manually
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-cards-blank text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ total_cards }}</h3>
+                <p class="text-muted mb-0">Total Flashcards</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-clock text-warning"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ due_cards|length }}</h3>
+                <p class="text-muted mb-0">Due for Review</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-check-circle text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ ((total_cards - due_cards|length) / total_cards * 100)|round|int if total_cards > 0 else 0 }}%</h3>
+                <p class="text-muted mb-0">Mastery Rate</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="glass-card p-4 text-center">
+                <div class="stat-icon mb-3">
+                    <i class="fas fa-fire text-danger"></i>
+                </div>
+                <h3 class="fw-bold mb-1">7</h3>
+                <p class="text-muted mb-0">Day Streak</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topics Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-folder me-2"></i>Your Learning Topics
+                </h5>
+                
+                {% if topics %}
+                <div class="row g-3">
+                    {% for topic_info in topics %}
+                    <div class="col-md-4">
+                        <div class="topic-card glass-card p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="fw-bold mb-0">{{ topic_info.topic }}</h6>
+                                <span class="badge bg-primary">{{ topic_info.count }} cards</span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                Due: {{ topic_info.due_count }} | 
+                                Next: {{ topic_info.next_review.strftime('%m/%d') if topic_info.next_review else 'Ready' }}
+                            </p>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('review_topic', topic=topic_info.topic) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-play me-1"></i>Review Due
+                                </a>
+                                <a href="{{ url_for('revise_early', topic=topic_info.topic) }}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-eye me-1"></i>Revise Early
+                                </a>
+                                <a href="{{ url_for('edit_topic_cards', topic=topic_info.topic) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted mb-2">No learning topics yet</h5>
+                    <p class="text-muted mb-3">Generate your first set of flashcards using AI!</p>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#aiGenerateModal">
+                        <i class="fas fa-magic me-2"></i>Generate AI Flashcards
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Review Section -->
+        <div class="col-lg-8">
+            {% if due_cards %}
+            <div class="glass-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-play me-2"></i>Review Session
+                    </h5>
+                    <div class="progress-info">
+                        <span class="badge bg-primary">Card 1 of {{ due_cards|length }}</span>
+                    </div>
+                </div>
+
+                <!-- Flashcard Review Interface -->
+                <div id="flashcardReview" class="text-center">
+                    {% set first_card = due_cards[0] %}
+                    <div class="flashcard-container mb-4">
+                        <div class="flashcard" id="flashcard" onclick="flipCard()">
+                            <div class="flashcard-front">
+                                <div class="flashcard-content">
+                                    <h4 class="mb-3">{{ first_card.question }}</h4>
+                                    <p class="text-muted">Click to reveal answer</p>
+                                </div>
+                            </div>
+                            <div class="flashcard-back">
+                                <div class="flashcard-content">
+                                    <h4 class="mb-3">{{ first_card.answer }}</h4>
+                                    <small class="text-muted">Category: {{ first_card.category or 'General' }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Review Buttons (initially hidden) -->
+                    <div id="reviewButtons" class="review-buttons" style="display: none;">
+                        <p class="mb-3">How well did you know this?</p>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-danger" onclick="reviewCard({{ first_card.id }}, 1)">
+                                <i class="fas fa-times me-2"></i>Hard
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="reviewCard({{ first_card.id }}, 3)">
+                                <i class="fas fa-meh me-2"></i>Good
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="reviewCard({{ first_card.id }}, 5)">
+                                <i class="fas fa-check me-2"></i>Easy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="glass-card p-5 text-center">
+                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                <h4 class="text-success mb-3">All caught up! 🎉</h4>
+                <p class="text-muted mb-4">No flashcards are due for review right now. Great job staying on top of your studies!</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFlashcardModal">
+                    <i class="fas fa-plus me-2"></i>Create New Flashcard
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- Recent Flashcards -->
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-history me-2"></i>Recently Created
+                </h5>
+                
+                {% if user.flashcards %}
+                <div class="row g-3">
+                    {% for card in user.flashcards[:6] %}
+                    <div class="col-md-6">
+                        <div class="flashcard-mini">
+                            <h6 class="mb-2">{{ card.question[:50] }}{% if card.question|length > 50 %}...{% endif %}</h6>
+                            <p class="text-muted small mb-2">{{ card.answer[:80] }}{% if card.answer|length > 80 %}...{% endif %}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ card.category or 'General' }}</small>
+                                <span class="badge bg-{{ 'success' if card.difficulty == 'Easy' else 'warning' if card.difficulty == 'Medium' else 'danger' }}">
+                                    {{ card.difficulty }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-plus-circle fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">No flashcards created yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Create -->
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-zap me-2"></i>Quick Create
+                </h5>
+                
+                <form method="POST" action="{{ url_for('create_flashcard') }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="question" rows="2" 
+                                  placeholder="Question..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control" name="answer" rows="3" 
+                                  placeholder="Answer..." required></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <select class="form-select form-select-sm" name="category">
+                                <option value="Algorithms">Algorithms</option>
+                                <option value="Data Structures">Data Structures</option>
+                                <option value="System Design">System Design</option>
+                                <option value="Programming">Programming</option>
+                                <option value="General" selected>General</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <select class="form-select form-select-sm" name="difficulty">
+                                <option value="Easy">Easy</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus me-2"></i>Add Card
+                    </button>
+                </form>
+            </div>
+
+            <!-- Study Statistics -->
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-chart-pie me-2"></i>Study Stats
+                </h5>
+                
+                <div class="study-progress mb-4">
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+                
+                <div class="stats-list">
+                    <div class="stat-item mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Cards Reviewed Today</span>
+                            <span class="fw-bold">12</span>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Average Accuracy</span>
+                            <span class="fw-bold">87%</span>
+                        </div>
+                    </div>
+                    <div class="stat-item mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Study Streak</span>
+                            <span class="fw-bold">7 days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Generate Flashcards Modal -->
+<div class="modal fade" id="aiGenerateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-magic me-2"></i>AI Flashcard Generator
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('ai_generate_flashcards') }}" id="aiGenerateForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="aiTopic" class="form-label">Learning Topic</label>
+                        <input type="text" class="form-control" name="topic" id="aiTopic" 
+                               placeholder="e.g., Binary Trees, REST APIs, React Hooks, Machine Learning..." required>
+                        <div class="form-text">Enter any programming or technical topic you want to study</div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="aiDifficulty" class="form-label">Difficulty Level</label>
+                            <select class="form-select" name="difficulty_level" id="aiDifficulty">
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate" selected>Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="aiSchedule" class="form-label">Suggested Review Schedule</label>
+                            <select class="form-select" name="review_schedule" id="aiSchedule">
+                                <option value="weekly" selected>Weekly</option>
+                                <option value="biweekly">Bi-weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>AI will generate 5-15 flashcards</strong> based on topic complexity, including definitions, examples, and practical questions.
+                    </div>
+                    <div class="alert alert-warning" style="display: none;" id="apiWarning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>API Backup:</strong> If AI generation fails, sample flashcards will be created that you can edit.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-magic me-2"></i>Generate Flashcards
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Create Flashcard Modal -->
+<div class="modal fade" id="createFlashcardModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Flashcard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_flashcard') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="modalTopic" class="form-label">Topic</label>
+                        <input type="text" class="form-control" name="topic" id="modalTopic" 
+                               placeholder="e.g., Binary Trees, React, Python..." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalQuestion" class="form-label">Question</label>
+                        <textarea class="form-control" name="question" id="modalQuestion" rows="3" 
+                                  placeholder="What do you want to remember?" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalAnswer" class="form-label">Answer</label>
+                        <textarea class="form-control" name="answer" id="modalAnswer" rows="4" 
+                                  placeholder="The complete answer or explanation..." required></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="modalCategory" class="form-label">Category</label>
+                            <select class="form-select" name="category" id="modalCategory">
+                                <option value="Algorithms">Algorithms</option>
+                                <option value="Data Structures">Data Structures</option>
+                                <option value="System Design">System Design</option>
+                                <option value="Programming Languages">Programming Languages</option>
+                                <option value="Database">Database</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="General" selected>General</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modalDifficulty" class="form-label">Difficulty</label>
+                            <select class="form-select" name="difficulty" id="modalDifficulty">
+                                <option value="Easy">Easy</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Flashcard
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let cardFlipped = false;
+
+function flipCard() {
+    const flashcard = document.getElementById('flashcard');
+    const reviewButtons = document.getElementById('reviewButtons');
+    
+    if (!cardFlipped) {
+        flashcard.classList.add('flipped');
+        setTimeout(() => {
+            reviewButtons.style.display = 'block';
+        }, 300);
+        cardFlipped = true;
+    }
+}
+
+function reviewCard(cardId, quality) {
+    // Submit review
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("review_flashcard", card_id=0) }}'.replace('0', cardId);
+    
+    const qualityInput = document.createElement('input');
+    qualityInput.type = 'hidden';
+    qualityInput.name = 'quality';
+    qualityInput.value = quality;
+    
+    form.appendChild(qualityInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Category distribution chart
+const ctx = document.getElementById('categoryChart').getContext('2d');
+const categoryChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Algorithms', 'Data Structures', 'System Design', 'General'],
+        datasets: [{
+            data: [30, 25, 20, 25],
+            backgroundColor: [
+                'rgba(99, 102, 241, 0.8)',
+                'rgba(34, 197, 94, 0.8)',
+                'rgba(251, 191, 36, 0.8)',
+                'rgba(239, 68, 68, 0.8)'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    usePointStyle: true,
+                    padding: 15
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

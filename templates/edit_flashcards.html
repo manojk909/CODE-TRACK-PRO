@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ topic }} Flashcards - CodeLearn Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="fw-bold gradient-text mb-2">
+                            <i class="fas fa-edit me-2"></i>Edit {{ topic }} Flashcards
+                        </h2>
+                        <p class="text-muted mb-0">{{ cards|length }} cards in this topic</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="{{ url_for('revision') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Revision
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flashcards List -->
+    <div class="row g-4">
+        {% for card in cards %}
+        <div class="col-md-6">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="badge bg-{{ 'success' if card.difficulty == 'easy' else 'warning' if card.difficulty == 'medium' else 'danger' }}">
+                        {{ card.difficulty|title }}
+                    </span>
+                    <span class="badge bg-{{ 'primary' if card.is_ai_generated else 'secondary' }}">
+                        {{ 'AI Generated' if card.is_ai_generated else 'Manual' }}
+                    </span>
+                </div>
+                
+                <form method="POST" action="{{ url_for('edit_flashcard', card_id=card.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Question</label>
+                        <textarea class="form-control" name="question" rows="3" required>{{ card.question }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Answer</label>
+                        <textarea class="form-control" name="answer" rows="4" required>{{ card.answer }}</textarea>
+                    </div>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Difficulty</label>
+                            <select class="form-select form-select-sm" name="difficulty">
+                                <option value="easy" {{ 'selected' if card.difficulty == 'easy' else '' }}>Easy</option>
+                                <option value="medium" {{ 'selected' if card.difficulty == 'medium' else '' }}>Medium</option>
+                                <option value="hard" {{ 'selected' if card.difficulty == 'hard' else '' }}>Hard</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Next Review</label>
+                            <small class="form-text text-muted d-block">
+                                {{ card.next_review.strftime('%m/%d/%Y') if card.next_review else 'Not scheduled' }}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-save me-1"></i>Save Changes
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteCard({{ card.id }})">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if not cards %}
+    <div class="text-center py-5">
+        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">No flashcards found for this topic</h5>
+        <a href="{{ url_for('revision') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create Some Cards
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteCard(cardId) {
+    if (confirm('Are you sure you want to delete this flashcard?')) {
+        fetch(`/delete_flashcard/${cardId}`, {
+            method: 'DELETE'
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting flashcard');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

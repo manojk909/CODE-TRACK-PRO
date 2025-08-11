@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: codetrack-pro
+    env: python
+    buildCommand: "pip install -r render_requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 main:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SESSION_SECRET
+        generateValue: true
+  - type: pserv
+    name: codetrack-pro-db
+    env: postgresql
+    plan: free
+    database: codetrack_pro
+    user: codetrack_user

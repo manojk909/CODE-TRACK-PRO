@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-light">
+            <i class="fas fa-bell me-2"></i>Notifications
+            {% if unread_count > 0 %}
+                <span class="badge bg-danger ms-2">{{ unread_count }}</span>
+            {% endif %}
+        </h2>
+        {% if unread_count > 0 %}
+            <button class="btn btn-outline-primary btn-sm" id="markAllReadBtn">
+                <i class="fas fa-check-double me-1"></i>Mark All Read
+            </button>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card bg-dark border-secondary">
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for notification in notifications %}
+                                <div class="list-group-item list-group-item-action bg-dark border-secondary notification-item {% if not notification.is_read %}unread{% endif %}" 
+                                     data-notification-id="{{ notification.id }}">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="notification-icon me-2" style="font-size: 1.2em;">
+                                                    {{ notification.icon }}
+                                                </span>
+                                                <h6 class="mb-0 text-light">
+                                                    {{ notification.title }}
+                                                </h6>
+                                                {% if not notification.is_read %}
+                                                    <span class="badge bg-primary ms-2">New</span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="mb-2 text-light-50">
+                                                {{ notification.message|safe }}
+                                            </p>
+                                            <div class="d-flex align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>{{ notification.time_ago }}
+                                                </small>
+                                                <span class="badge bg-secondary ms-2">
+                                                    {% if notification.category == 'contest' %}
+                                                        Contest
+                                                    {% elif notification.category == 'forum' %}
+                                                        Doubt Forum
+                                                    {% elif notification.category == 'study_group' %}
+                                                        Study Group
+                                                    {% else %}
+                                                        General
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="ms-3">
+                                            {% if not notification.is_read %}
+                                                <button class="btn btn-sm btn-outline-primary mark-read-btn" 
+                                                        data-notification-id="{{ notification.id }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            {% else %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <i class="fas fa-bell-slash text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-light mt-3">No Notifications</h4>
+                    <p class="text-muted">You're all caught up! New notifications will appear here.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.notification-item.unread {
+    border-left: 4px solid #0d6efd;
+    background: rgba(13, 110, 253, 0.1);
+}
+
+.notification-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mark-read-btn {
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.mark-read-btn:hover {
+    opacity: 1;
+}
+
+.notification-icon {
+    min-width: 20px;
+    text-align: center;
+}
+
+.text-light-50 {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+pre {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark individual notification as read
+    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const notificationId = this.dataset.notificationId;
+            markNotificationRead(notificationId, this);
+        });
+    });
+
+    // Mark all notifications as read
+    const markAllBtn = document.getElementById('markAllReadBtn');
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function() {
+            markAllNotificationsRead();
+        });
+    }
+
+    function markNotificationRead(notificationId, button) {
+        fetch(`/notifications/mark_read/${notificationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const notificationItem = button.closest('.notification-item');
+                notificationItem.classList.remove('unread');
+                button.outerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i></span>';
+                
+                // Update unread count
+                updateUnreadCount();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking notification as read:', error);
+        });
+    }
+
+    function markAllNotificationsRead() {
+        fetch('/notifications/mark_all_read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove unread class from all notifications
+                document.querySelectorAll('.notification-item.unread').forEach(item => {
+                    item.classList.remove('unread');
+                });
+                
+                // Replace all mark-read buttons with check icons
+                document.querySelectorAll('.mark-read-btn').forEach(btn => {
+                    btn.outerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i></span>';
+                });
+                
+                // Hide the "Mark All Read" button
+                const markAllBtn = document.getElementById('markAllReadBtn');
+                if (markAllBtn) {
+                    markAllBtn.style.display = 'none';
+                }
+                
+                // Update unread count
+                updateUnreadCount();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+        });
+    }
+
+    function updateUnreadCount() {
+        // Update the badge in the header if it exists
+        const unreadBadges = document.querySelectorAll('.unread-count');
+        const unreadItems = document.querySelectorAll('.notification-item.unread').length;
+        
+        unreadBadges.forEach(badge => {
+            if (unreadItems > 0) {
+                badge.textContent = unreadItems;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

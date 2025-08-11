@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - CodeLearn Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="glass-card text-center">
+                <div class="error-container">
+                    <h1 class="display-1 text-danger">500</h1>
+                    <h2 class="mb-4">Server Error</h2>
+                    <p class="lead mb-4">Something went wrong on our end. We're working to fix it!</p>
+                    <a href="{{ url_for('dashboard' if session.get('user_id') else 'index') }}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Go Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-container {
+    padding: 60px 20px;
+}
+
+.display-1 {
+    font-size: 8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+</style>
+{% endblock %}

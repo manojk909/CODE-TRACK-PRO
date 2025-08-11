@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}{{ contest.title }} - Contest{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <!-- Contest Header with Timer -->
+    <div class="glass-card p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="fw-bold mb-1">{{ contest.title }}</h4>
+                <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>{{ contest.duration_minutes }} minutes
+                    | <i class="fas fa-list me-1"></i>{{ problems|length }} problems
+                </small>
+            </div>
+            <div class="text-end">
+                <div class="contest-timer h4 mb-1" id="timer">
+                    <span class="badge bg-warning text-dark fs-5">
+                        <i class="fas fa-hourglass-half me-2"></i>
+                        <span id="timeRemaining">Loading...</span>
+                    </span>
+                </div>
+                <small class="text-muted">Time remaining</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Problems List -->
+        <div class="col-lg-3">
+            <div class="glass-card p-3 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-list me-2"></i>Problems
+                </h5>
+                <div class="list-group list-group-flush">
+                    {% for problem in problems %}
+                    <a href="{{ url_for('contest_problem', contest_id=contest.id, problem_id=problem.id) }}" 
+                       class="list-group-item list-group-item-action bg-transparent border-0 p-3 rounded mb-2
+                              {% if problem.id in submissions and submissions[problem.id].status == 'accepted' %}border-success{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Problem {{ loop.index }}</h6>
+                                <small class="text-muted">{{ problem.title }}</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-info">{{ problem.points }} pts</span>
+                                    {% if problem.id in submissions %}
+                                        {% set submission = submissions[problem.id] %}
+                                        {% if submission.status == 'accepted' %}
+                                            <span class="badge bg-success">Solved</span>
+                                        {% elif submission.status == 'partial' %}
+                                            <span class="badge bg-warning text-dark">Partial</span>
+                                        {% elif submission.status == 'wrong_answer' %}
+                                            <span class="badge bg-danger">Wrong</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ submission.status|title }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if problem.id in submissions and submissions[problem.id].status == 'accepted' %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                
+                <!-- Progress Summary -->
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="small text-muted mb-2">Progress:</h6>
+                    {% set solved = submissions.values()|selectattr('status', 'equalto', 'accepted')|list|length %}
+                    {% set attempted = submissions|length %}
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ (solved / problems|length * 100)|round }}%"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ ((attempted - solved) / problems|length * 100)|round }}%"></div>
+                    </div>
+                    <div class="row text-center small">
+                        <div class="col-4">
+                            <strong class="text-success">{{ solved }}</strong>
+                            <div class="text-muted">Solved</div>
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-warning">{{ attempted - solved }}</strong>
+                            <div class="text-muted">Tried</div>
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-secondary">{{ problems|length - attempted }}</strong>
+                            <div class="text-muted">Unseen</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-lg-9">
+            <div class="glass-card p-4">
+                <div class="text-center py-5">
+                    <i class="fas fa-code fa-4x text-primary mb-4"></i>
+                    <h4 class="text-muted mb-3">Select a Problem to Begin</h4>
+                    <p class="text-muted mb-4">
+                        Choose a problem from the left panel to start coding. You can switch between problems at any time.
+                    </p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-lightbulb me-2"></i>Contest Tips
+                                </h6>
+                                <ul class="mb-0 text-start">
+                                    <li>Read all problems before starting to code</li>
+                                    <li>Start with problems you find easiest</li>
+                                    <li>Use the "Run Code" feature to test with custom inputs</li>
+                                    <li>Submit early and often - you can resubmit with improvements</li>
+                                    <li>Watch the timer - submissions after time expires won't be counted</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-submit modal -->
+<div class="modal fade" id="autoSubmitModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-warning">
+                    <i class="fas fa-clock me-2"></i>Contest Ending Soon
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h6>Time's up! Your solutions have been auto-submitted.</h6>
+                    <p class="text-muted">The contest has ended and all your work has been automatically saved.</p>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <a href="{{ url_for('contests') }}" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i>Back to Contests
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.contest-timer {
+    font-family: 'Courier New', monospace;
+}
+
+.list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.progress {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.border-success {
+    border: 2px solid #198754 !important;
+}
+</style>
+
+<script>
+let remainingSeconds = {{ remaining_seconds }};
+let timerInterval;
+
+function updateTimer() {
+    if (remainingSeconds <= 0) {
+        // Contest ended
+        document.getElementById('timeRemaining').innerHTML = 
+            '<span class="text-danger">TIME UP!</span>';
+        clearInterval(timerInterval);
+        
+        // Show auto-submit modal
+        new bootstrap.Modal(document.getElementById('autoSubmitModal')).show();
+        
+        // Redirect after 5 seconds
+        setTimeout(() => {
+            window.location.href = "{{ url_for('contests') }}";
+        }, 5000);
+        
+        return;
+    }
+
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    const seconds = remainingSeconds % 60;
+
+    let timeText = '';
+    if (hours > 0) {
+        timeText = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+        timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    document.getElementById('timeRemaining').textContent = timeText;
+    
+    // Change color when time is running out
+    const timerElement = document.querySelector('.contest-timer .badge');
+    if (remainingSeconds <= 300) { // 5 minutes
+        timerElement.className = 'badge bg-danger text-white fs-5';
+    } else if (remainingSeconds <= 900) { // 15 minutes
+        timerElement.className = 'badge bg-warning text-dark fs-5';
+    }
+
+    remainingSeconds--;
+}
+
+// Start timer
+document.addEventListener('DOMContentLoaded', function() {
+    updateTimer(); // Initial call
+    timerInterval = setInterval(updateTimer, 1000);
+});
+
+// Track if navigation is internal (to contest pages)
+let allowNavigation = false;
+
+// Allow navigation for contest-related links
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all links that should allow navigation within contest
+    const contestLinks = document.querySelectorAll('a[href*="/contest/"]');
+    contestLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            allowNavigation = true;
+            // Reset flag after a brief delay to catch the navigation
+            setTimeout(() => { allowNavigation = false; }, 100);
+        });
+    });
+});
+
+// Warn before leaving page (but allow internal contest navigation)
+window.addEventListener('beforeunload', function (e) {
+    if (remainingSeconds > 0 && !allowNavigation) {
+        e.preventDefault();
+        e.returnValue = 'Are you sure you want to leave the contest?';
+    }
+});
+</script>
+{% endblock %}

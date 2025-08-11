@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Contest - {{ contest.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('contests') }}" class="btn btn-outline-secondary me-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="gradient-text fw-bold mb-0">{{ contest.title }}</h2>
+            <small class="text-muted">
+                <i class="fas fa-calendar me-1"></i>{{ contest.start_date.strftime('%Y-%m-%d %H:%M') }}
+                | <i class="fas fa-clock me-1"></i>{{ contest.duration_minutes }} minutes
+                {% if contest.is_live() %}
+                    | <span class="badge bg-warning text-dark">LIVE NOW</span>
+                {% elif contest.is_upcoming() %}
+                    | <span class="badge bg-primary">UPCOMING</span>
+                {% else %}
+                    | <span class="badge bg-secondary">FINISHED</span>
+                {% endif %}
+            </small>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Contest Problems -->
+        <div class="col-lg-8">
+            <div class="glass-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold">
+                        <i class="fas fa-code me-2"></i>Contest Problems
+                        <span class="badge bg-primary ms-2">{{ problems|length }}</span>
+                    </h4>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProblemModal">
+                        <i class="fas fa-plus me-2"></i>Add Problem
+                    </button>
+                </div>
+
+                {% if problems %}
+                <div class="list-group list-group-flush">
+                    {% for problem in problems %}
+                    <div class="list-group-item bg-transparent border-bottom">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-2">
+                                    Problem {{ loop.index }}: {{ problem.title }}
+                                    <span class="badge bg-info ms-2">{{ problem.points }} pts</span>
+                                </h6>
+                                <p class="text-muted small mb-2">{{ problem.description[:100] }}...</p>
+                                <div class="small text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ problem.time_limit }}s
+                                    | <i class="fas fa-memory me-1"></i>{{ problem.memory_limit }}MB
+                                    | <i class="fas fa-vials me-1"></i>{{ problem.test_cases|length }} test cases
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <button class="dropdown-item" 
+                                                onclick="showTestCaseModal({{ problem.id }}, '{{ problem.title }}')">
+                                            <i class="fas fa-vials me-2"></i>Add Test Cases
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" 
+                                                onclick="viewTestCases({{ problem.id }})">
+                                            <i class="fas fa-eye me-2"></i>View Test Cases
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Test Cases Preview -->
+                        <div class="mt-3" id="testCases{{ problem.id }}" style="display: none;">
+                            <h6 class="small text-muted mb-2">Test Cases:</h6>
+                            {% for test_case in problem.test_cases %}
+                            <div class="small mb-2 p-2 bg-dark rounded">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <strong>Input:</strong>
+                                        <code class="text-info">{{ test_case.input_data[:50] }}{% if test_case.input_data|length > 50 %}...{% endif %}</code>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <strong>Output:</strong>
+                                        <code class="text-success">{{ test_case.expected_output[:50] }}{% if test_case.expected_output|length > 50 %}...{% endif %}</code>
+                                    </div>
+                                    <div class="col-md-2">
+                                        {% if test_case.is_sample %}
+                                        <span class="badge bg-warning text-dark">Sample</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Hidden</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-code fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Problems Added Yet</h5>
+                    <p class="text-muted">Start by adding programming problems for students to solve.</p>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProblemModal">
+                        <i class="fas fa-plus me-2"></i>Add Your First Problem
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contest Info & Actions -->
+        <div class="col-lg-4">
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-info-circle me-2"></i>Contest Info
+                </h5>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Description:</small>
+                    <p class="small">{{ contest.description or 'No description provided' }}</p>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Start Time:</small>
+                    <strong>{{ contest.start_date.strftime('%Y-%m-%d %H:%M') }}</strong>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Duration:</small>
+                    <strong>{{ contest.duration_minutes }} minutes</strong>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Status:</small>
+                    {% if contest.is_live() %}
+                        <span class="badge bg-warning text-dark">LIVE NOW</span>
+                    {% elif contest.is_upcoming() %}
+                        <span class="badge bg-primary">UPCOMING</span>
+                    {% else %}
+                        <span class="badge bg-secondary">FINISHED</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if contest.is_finished() %}
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>Contest Results
+                </h5>
+                <div class="d-grid">
+                    <a href="{{ url_for('contest_results', contest_id=contest.id) }}" 
+                       class="btn btn-success">
+                        <i class="fas fa-trophy me-2"></i>View Final Results
+                    </a>
+                </div>
+            </div>
+            {% elif contest.is_live() %}
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-broadcast-tower me-2"></i>Live Contest
+                </h5>
+                <div class="d-grid">
+                    <a href="{{ url_for('contest_leaderboard', contest_id=contest.id) }}" 
+                       class="btn btn-warning text-dark">
+                        <i class="fas fa-chart-line me-2"></i>Live Leaderboard
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Problem Modal -->
+<div class="modal fade" id="addProblemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Problem
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_contest_problem', contest_id=contest.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Problem Title</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Problem Description</label>
+                        <textarea class="form-control" name="description" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Constraints (Optional)</label>
+                        <textarea class="form-control" name="constraints" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Examples (Optional)</label>
+                        <textarea class="form-control" name="examples" rows="3" 
+                                  placeholder="Input: [example input]&#10;Output: [example output]"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Points</label>
+                            <input type="number" class="form-control" name="points" value="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Time Limit (seconds)</label>
+                            <input type="number" class="form-control" name="time_limit" value="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Memory Limit (MB)</label>
+                            <input type="number" class="form-control" name="memory_limit" value="256">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Add Problem
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Test Case Modal -->
+<div class="modal fade" id="addTestCaseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fas fa-vials me-2"></i>Add Test Case to <span id="problemTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="testCaseForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Input Data</label>
+                        <textarea class="form-control" name="input_data" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Expected Output</label>
+                        <textarea class="form-control" name="expected_output" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_sample" id="isSample">
+                            <label class="form-check-label" for="isSample">
+                                <i class="fas fa-eye me-1"></i>Sample Test Case (visible to students)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Add Test Case
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTestCaseModal(problemId, problemTitle) {
+    document.getElementById('problemTitle').textContent = problemTitle;
+    document.getElementById('testCaseForm').action = 
+        `/contest/{{ contest.id }}/problem/${problemId}/add_test_case`;
+    new bootstrap.Modal(document.getElementById('addTestCaseModal')).show();
+}
+
+function viewTestCases(problemId) {
+    const element = document.getElementById('testCases' + problemId);
+    element.style.display = element.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
