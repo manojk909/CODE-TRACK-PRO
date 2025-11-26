@@ -1,9 +1,3 @@
-Great! Here is a **professional, polished, badge-rich, GitHub-ready README.md** for your **CODE-TRACK-PRO** repository.
-Just copy-paste into your repo’s README.md.
-
----
-
-```markdown
 <h1 align="center">🚀 CODE-TRACK-PRO</h1>
 
 <p align="center">
@@ -66,7 +60,6 @@ This project is designed for students, developers, and anyone serious about impr
 
 ## 🗂️ Project Structure
 
-```
 
 CODE-TRACK-PRO/
 │
@@ -86,17 +79,16 @@ CODE-TRACK-PRO/
 ├── requirements.txt
 └── README.md
 
-````
 
 ---
 
 ## 🛠️ Installation & Setup
 
 ### 1️⃣ Clone the repository
-```bash
+bash
 git clone https://github.com/manojk909/CODE-TRACK-PRO.git
 cd CODE-TRACK-PRO
-````
+
 
 ### 2️⃣ Create & activate virtual environment
 
@@ -121,15 +113,6 @@ python app.py
 Visit: **[http://localhost:5000](http://localhost:5000)**
 
 ---
-
-## 📸 Screenshots (Optional)
-
-> Add screenshots inside `static/screenshots/` and reference them here.
-
-```
-![Dashboard](static/screenshots/dashboard.png)
-![Code Runner](static/screenshots/code_runner.png)
-```
 
 ---
 
