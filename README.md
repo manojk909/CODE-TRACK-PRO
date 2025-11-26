@@ -60,7 +60,7 @@ This project is designed for students, developers, and anyone serious about impr
 
 ## 🗂️ Project Structure
 
-
+```text
 CODE-TRACK-PRO/
 │
 ├── app.py                      # Main Flask application
@@ -78,17 +78,17 @@ CODE-TRACK-PRO/
 │
 ├── requirements.txt
 └── README.md
-
+```
 
 ---
 
 ## 🛠️ Installation & Setup
 
 ### 1️⃣ Clone the repository
-bash
+```bash
 git clone https://github.com/manojk909/CODE-TRACK-PRO.git
 cd CODE-TRACK-PRO
-
+```
 
 ### 2️⃣ Create & activate virtual environment
 
