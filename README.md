@@ -183,12 +183,3 @@ If you have questions or suggestions, feel free to reach out:
 ### ⭐ If you like this project, give it a star on GitHub — it motivates further development!
 
 ```
-
----
-
-If you want, I can also add:  
-✅ A project **logo/banner**  
-✅ Animated GIF demo  
-✅ API documentation section  
-Just tell me!
-```
